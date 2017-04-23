@@ -104,5 +104,51 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection using CV
-        raise NotImplementedError
+        # implement model selection using CV
+
+        try:
+
+            best_logL = None
+            best_num_components = 3
+
+            # If there are less, than 3 examples, return the model with 3 components.
+            # Others it would drop a value exception.
+            min_examples = 3
+            if len(self.lengths) < min_examples:
+                hmm_model = self.base_model(best_num_components)
+                return hmm_model
+
+            # We have enough examples. We can use KFold.
+
+            # Check the different components.
+            for i in range(self.min_n_components, self.max_n_components + 1):
+
+                # Kfold.
+                split_method = KFold()
+                for train_index, test_index in split_method.split(self.lengths):
+
+                    train_X, train_lengths = combine_sequences(train_index, self.sequences)
+                    #train_lengths = self.lengths[train_index]
+                    test_X, test_lengths = combine_sequences(test_index, self.sequences)
+                    #test_lengths = self.lengths[test_index]
+
+                    hmm_model = GaussianHMM(n_components=i, covariance_type="diag", n_iter=1000, random_state=self.random_state, verbose=False).fit(train_X, train_lengths)
+
+                    logL = hmm_model.score(test_X, test_lengths)
+
+                    if (best_logL is None) or (best_logL < logL):
+                        best_logL = logL
+                        best_num_components = i
+
+            if self.verbose:
+                print("model created for {} with {} components".format(self.this_word, best_num_components))
+
+            hmm_model = self.base_model(best_num_components)
+            return hmm_model
+
+        except:
+
+            if self.verbose:
+                print("failure on {}".format(self.this_word))
+
+            return None
