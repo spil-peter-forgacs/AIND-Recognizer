@@ -66,6 +66,14 @@ class SelectorBIC(ModelSelector):
 
     http://www2.imm.dtu.dk/courses/02433/doc/ch6_slides.pdf
     Bayesian information criteria: BIC = -2 * logL + p * logN
+        logL: loglikelihood
+        N: the sample size of the training set (number of observations / data points)
+        p: the total number of free parameters (model degrees of freedom)
+            p1 = transistion_matrix_probabilities(=n*n) + gaussian_means(=n*d) + gaussian_variance(=n*d) = n*n + n*d + n*d = n*n + 2*d*n
+            p2 = n*(n-1) + 2*d*n
+            p3 = n*(n-1) + (n-1) + 2*d*n = n*n + 2*d*n - 1
+                n: the number of model states (HMM states)
+                d: the number of features or data points that is used to train the model: len(self.X[0])
     """
 
     def select(self):
@@ -76,8 +84,24 @@ class SelectorBIC(ModelSelector):
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+        best_bic = None
+        best_hmm_model = None
+
+        # Check the different components.
+        for n in range(self.min_n_components, self.max_n_components + 1):
+            hmm_model = GaussianHMM(n_components=n, covariance_type="diag", n_iter=1000, random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+
+            logL = hmm_model.score(self.X, self.lengths)
+            logN = np.log(len(self.words))
+            d = len(self.X[0])
+            p = n*n + 2*d*n - 1
+            bic = -2 * logL + p * logN
+
+            if (best_bic is None) or (best_bic > bic):
+                best_bic = bic
+                best_hmm_model = hmm_model
+
+        return best_hmm_model
 
 
 class SelectorDIC(ModelSelector):
