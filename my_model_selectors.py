@@ -111,13 +111,55 @@ class SelectorDIC(ModelSelector):
     Document Analysis and Recognition, 2003. Proceedings. Seventh International Conference on. IEEE, 2003.
     http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.58.6208&rep=rep1&type=pdf
     DIC = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
+    DIC = log(P(original world)) - average(log(P(otherwords)))
     '''
 
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on DIC scores
-        raise NotImplementedError
+        try:
+
+            best_dic = None
+            best_hmm_model = None
+
+            word_number = (len(self.words) - 1)
+
+            # Check the different components.
+            for n in range(self.min_n_components, self.max_n_components + 1):
+                if len(self.X) >= n:
+                    try:
+                        hmm_model = GaussianHMM(n_components=n, covariance_type="diag", n_iter=1000, random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+                        logL = hmm_model.score(self.X, self.lengths)
+
+                        logL_others = 0;
+                        for word in self.hwords:
+                            if word != self.this_word:
+                                X_others, lengths_others = self.hwords[word]
+                                if len(X_others) >= n:
+                                    try:
+                                        hmm_model_others = GaussianHMM(n_components=n, covariance_type="diag", n_iter=1000, random_state=self.random_state, verbose=False).fit(X_others, lengths_others)
+                                        logL_others = logL_others + hmm_model_others.score(X_others, lengths_others)
+                                    except:
+                                        pass
+
+                        average = logL_others / word_number
+                        dic = logL - average
+
+                        if (best_dic is None) or (best_dic < dic):
+                            best_dic = dic
+                            best_hmm_model = hmm_model
+                    except:
+                        pass
+
+            return best_hmm_model
+
+        except Exception as e:
+            print(str(e))
+
+            if self.verbose:
+                print("failure on {}".format(self.this_word))
+
+            return None
 
 
 class SelectorCV(ModelSelector):
