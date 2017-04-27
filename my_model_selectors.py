@@ -89,17 +89,20 @@ class SelectorBIC(ModelSelector):
 
         # Check the different components.
         for n in range(self.min_n_components, self.max_n_components + 1):
-            hmm_model = GaussianHMM(n_components=n, covariance_type="diag", n_iter=1000, random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+            try:
+                hmm_model = GaussianHMM(n_components=n, covariance_type="diag", n_iter=1000, random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
 
-            logL = hmm_model.score(self.X, self.lengths)
-            logN = np.log(len(self.words))
-            d = len(self.X[0])
-            p = n*n + 2*d*n - 1
-            bic = -2 * logL + p * logN
+                logL = hmm_model.score(self.X, self.lengths)
+                logN = np.log(len(self.words))
+                d = len(self.X[0])
+                p = n*n + 2*d*n - 1
+                bic = -2 * logL + p * logN
 
-            if (best_bic is None) or (best_bic > bic):
-                best_bic = bic
-                best_hmm_model = hmm_model
+                if (best_bic is None) or (best_bic > bic):
+                    best_bic = bic
+                    best_hmm_model = hmm_model
+            except:
+                pass
 
         return best_hmm_model
 
