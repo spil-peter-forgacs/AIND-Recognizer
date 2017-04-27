@@ -24,9 +24,33 @@ def recognize(models: dict, test_set: SinglesData):
 
     # implement the recognizer
 
-    try:
-        pass
-    except:
-        pass
+    # Iterate all test words
+    all_Xlengths = test_set.get_all_Xlengths()
+    for dictionary_key in all_Xlengths:
+        current_sequence, current_length = all_Xlengths[dictionary_key]
+
+        best_word = None
+        best_logL = float("-inf")
+        all_words = {}
+
+        # Iterate all models
+        for word in models:
+            model = models[word]
+
+            # Calculate score
+            try:
+                logL = model.score(current_sequence, current_length)
+            except:
+                logL = float("-inf")
+
+            all_words[word] = logL
+
+            if logL > best_logL:
+                best_word = word
+                best_logL = logL
+
+
+        probabilities.append(all_words)
+        guesses.append(best_word)
 
     return probabilities, guesses
