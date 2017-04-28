@@ -68,7 +68,7 @@ class SelectorBIC(ModelSelector):
     Bayesian information criteria: BIC = -2 * logL + p * logN
         logL: loglikelihood
         N: the sample size of the training set (number of observations / data points)
-        p: the total number of free parameters (model degrees of freedom)
+        p: the total number of free parameters (model degrees of freedom).
             p1 = transistion_matrix_probabilities(=n*n) + gaussian_means(=n*d) + gaussian_variance(=n*d) = n*n + n*d + n*d = n*n + 2*d*n
             p2 = n*(n-1) + 2*d*n
             p3 = n*(n-1) + (n-1) + 2*d*n = n*n + 2*d*n - 1
@@ -131,9 +131,11 @@ class SelectorDIC(ModelSelector):
             for n in range(self.min_n_components, self.max_n_components + 1):
                 if len(self.X) >= n:
                     try:
+                        # Calculate the logL for the given word.
                         hmm_model = GaussianHMM(n_components=n, covariance_type="diag", n_iter=1000, random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
                         logL = hmm_model.score(self.X, self.lengths)
 
+                        # Calculate the logLs for the other words.
                         logL_others = 0;
                         for word in self.hwords:
                             if word != self.this_word:
@@ -181,7 +183,7 @@ class SelectorCV(ModelSelector):
             best_num_components = 3
 
             # If there are less, than 3 examples, return the model with 3 components.
-            # Others it would drop a value exception.
+            # As we don't want value exception.
             min_examples = 3
             if len(self.lengths) < min_examples:
                 hmm_model = self.base_model(best_num_components)
